@@ -26,7 +26,7 @@ void resetSdToBaseline() {
 static volatile bool s_busy = false;
 bool HOMING_isBusy() { return s_busy; }
 
-static void zero_with_current(uint8_t servoID, int direction, int current_limit) {
+static void zero_with_current(uint8_t channel, uint8_t servoID, int direction, int current_limit) {
   int current = 0;
   int position = 0;
   hlscl.ServoMode(servoID);
@@ -46,21 +46,21 @@ static void zero_with_current(uint8_t servoID, int direction, int current_limit)
   delay(50);
   position = hlscl.ReadPos(servoID);
 
-  if (servoID == 0) {
+  if (channel == 0) {
     // Thumb abduction: hold grasp posture for a moment
-    hlscl.WritePosEx(servoID, sd[servoID].grasp_count, 60, 50, 500);
+    hlscl.WritePosEx(servoID, sd[channel].grasp_count, 60, 50, 500);
     delay(2000);
-  } else if (servoID == 1) {
+  } else if (channel == 1) {
     // Thumb flexion: go to extend
-    hlscl.WritePosEx(servoID, sd[servoID].extend_count, 60, 50, 500);
+    hlscl.WritePosEx(servoID, sd[channel].extend_count, 60, 50, 500);
     delay(1000);
-  } else if (servoID == 2) {
+  } else if (channel == 2) {
     // Thumb tendon: nudge and recalibrate, then extend
     hlscl.WritePosEx(servoID, position + (direction * 2048), 60, 50, 500);
     delay(1500);
     hlscl.CalibrationOfs(servoID);
     delay(500);
-    hlscl.WritePosEx(servoID, sd[servoID].extend_count, 60, 50, 500);
+    hlscl.WritePosEx(servoID, sd[channel].extend_count, 60, 50, 500);
     delay(1000);
   } else {
     // Fingers: nudge and recalibrate, then extend
@@ -68,7 +68,7 @@ static void zero_with_current(uint8_t servoID, int direction, int current_limit)
     delay(1500);
     hlscl.CalibrationOfs(servoID);
     delay(500);
-    hlscl.WritePosEx(servoID, sd[servoID].extend_count, 60, 50, 500);
+    hlscl.WritePosEx(servoID, sd[channel].extend_count, 60, 50, 500);
     delay(1000);
   }
 }
@@ -76,13 +76,13 @@ static void zero_with_current(uint8_t servoID, int direction, int current_limit)
 void zero_all_motors() {
   resetSdToBaseline();
   if (gBusMux) xSemaphoreTake(gBusMux, portMAX_DELAY);
-  zero_with_current(SERVO_IDS[0],  sd[0].servo_direction, 650);   // Thumb Abduction
-  zero_with_current(SERVO_IDS[1],  sd[1].servo_direction, 950);   // Thumb Flex
-  zero_with_current(SERVO_IDS[2],  sd[2].servo_direction, 950);   // Thumb Tendon
-  zero_with_current(SERVO_IDS[3],  sd[3].servo_direction, 950);   // Index
-  zero_with_current(SERVO_IDS[4],  sd[4].servo_direction, 950);   // Middle
-  zero_with_current(SERVO_IDS[5],  sd[5].servo_direction, 950);  // Ring
-  zero_with_current(SERVO_IDS[6],  sd[6].servo_direction, 950);  // Pinky
+  zero_with_current(0, SERVO_IDS[0],  sd[0].servo_direction, 650);   // Thumb Abduction
+  zero_with_current(1, SERVO_IDS[1],  sd[1].servo_direction, 950);   // Thumb Flex
+  zero_with_current(2, SERVO_IDS[2],  sd[2].servo_direction, 950);   // Thumb Tendon
+  zero_with_current(3, SERVO_IDS[3],  sd[3].servo_direction, 950);   // Index
+  zero_with_current(4, SERVO_IDS[4],  sd[4].servo_direction, 950);   // Middle
+  zero_with_current(5, SERVO_IDS[5],  sd[5].servo_direction, 950);  // Ring
+  zero_with_current(6, SERVO_IDS[6],  sd[6].servo_direction, 950);  // Pinky
   // Post-homing settling moves
   hlscl.WritePosEx(SERVO_IDS[0], sd[0].extend_count, 60, 50, 500);   // Thumb Abduction to extend
   hlscl.WritePosEx(SERVO_IDS[2], sd[2].extend_count, 60, 50, 500);   // Thumb Tendon to extend

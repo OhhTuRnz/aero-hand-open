@@ -15,7 +15,7 @@ Preferences prefs;
 #define SERIAL2_RX_PIN 2
 
 // ---- Servo IDs (declare at top) ----
-const uint8_t SERVO_IDS[7] = { 0, 1, 2, 3, 4, 5, 6 };
+const uint8_t SERVO_IDS[7] = { 0, 1, 2, 5, 8, 11, 14 };
 
 ServoData sd[7];
 
@@ -110,28 +110,26 @@ static void sendSetIdAck(uint8_t oldId, uint8_t newId, uint16_t curLimitWord) {
 static void loadManualExtendsFromNVS() {
   prefs.begin("hand", true);  // read-only
   for (uint8_t i = 0; i < 7; ++i) {
-    uint8_t ch = SERVO_IDS[i];
-    String key = "ext" + String(ch);
+    String key = "ext" + String(i);
     int v = prefs.getInt(key.c_str(), -1);
     if (v >= 0 && v <= 4095) {
-      sd[ch].extend_count = v;
+      sd[i].extend_count = v;
     }
   }
 }
 static void saveExtendsToNVS() {
   prefs.begin("hand", false);  // RW
   for (uint8_t i = 0; i < 7; ++i) {
-    uint8_t ch = SERVO_IDS[i];
-    String kext = "ext" + String(ch);
-    prefs.putInt(kext.c_str(), (int)sd[ch].extend_count);
+    String kext = "ext" + String(i);
+    prefs.putInt(kext.c_str(), (int)sd[i].extend_count);
   }
   prefs.end();
 }
 
 // ---- Helper function  for raw to U16 and U16 to raw ----
-static inline uint16_t mapRawToU16(uint8_t servoId, uint16_t raw) {
-  int32_t ext  = sd[servoId].extend_count;
-  int32_t gra  = sd[servoId].grasp_count;
+static inline uint16_t mapRawToU16(uint8_t channel, uint16_t raw) {
+  int32_t ext  = sd[channel].extend_count;
+  int32_t gra  = sd[channel].grasp_count;
   int32_t span = gra - ext;
   if (span == 0) return 0;  // avoid divide-by-zero
   int32_t val = ((int32_t)(raw - ext) * 65535L) / span;
@@ -140,9 +138,9 @@ static inline uint16_t mapRawToU16(uint8_t servoId, uint16_t raw) {
   if (val > 65535) val = 65535;
   return (uint16_t)val;
 }
-static inline uint16_t mapU16ToRaw(uint8_t servoId, uint16_t u16) {
-  int32_t ext = sd[servoId].extend_count;
-  int32_t gra = sd[servoId].grasp_count;
+static inline uint16_t mapU16ToRaw(uint8_t channel, uint16_t u16) {
+  int32_t ext = sd[channel].extend_count;
+  int32_t gra = sd[channel].grasp_count;
   int32_t raw32;
   if (ext == 0 && gra == 0) {
     raw32 = ((uint64_t)u16 * 4095u) / 65535u;
@@ -238,7 +236,7 @@ static void TaskSyncRead_Core1(void *arg) {
     for (uint8_t i = 0; i < 7; ++i) {
       if (!hlscl.syncReadPacketRx(SERVO_IDS[i], rx)) { ok = false; break; }
       uint16_t raw = leu_u16(&rx[0]);
-      pos[i] = mapRawToU16(SERVO_IDS[i],raw);                     // Position (unsigned)
+      pos[i] = mapRawToU16(i, raw);                     // Position (unsigned)
       vel[i] = decode_signmag15(rx[2], rx[3]);                  // velocity (signed)
       tmp[i] = rx[7];                                           // temperature (unsigned, 1 byte)
       cur[i] = decode_signmag15(rx[13], rx[14]);                // current (signed)
@@ -361,8 +359,7 @@ static bool handleHostFrame(uint8_t op) {
       int16_t pos[7];
       for (int i = 0; i < 7; ++i) {
         uint16_t u16 = (uint16_t)payload[2*i] | ((uint16_t)payload[2*i+1] << 8);
-        uint8_t  ch  = SERVO_IDS[i];
-        pos[i] = mapU16ToRaw(ch, u16);
+        pos[i] = mapU16ToRaw(i, u16);
       }
       if (gBusMux) xSemaphoreTake(gBusMux, portMAX_DELAY);
       hlscl.SyncWritePosEx((uint8_t*)SERVO_IDS, 7, pos, g_speed, g_accel, g_torque);
