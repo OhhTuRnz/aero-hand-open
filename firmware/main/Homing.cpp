@@ -1,4 +1,5 @@
 #include "Homing.h"
+#include "HandConfig.h"
 
 // ----------------------- Immutable baselines -----------------------
 // Always define both symbols so linker can resolve them
@@ -76,16 +77,21 @@ static void zero_with_current(uint8_t channel, uint8_t servoID, int direction, i
 void zero_all_motors() {
   resetSdToBaseline();
   if (gBusMux) xSemaphoreTake(gBusMux, portMAX_DELAY);
-  zero_with_current(0, SERVO_IDS[0],  sd[0].servo_direction, 650);   // Thumb Abduction
-  zero_with_current(1, SERVO_IDS[1],  sd[1].servo_direction, 950);   // Thumb Flex
-  zero_with_current(2, SERVO_IDS[2],  sd[2].servo_direction, 950);   // Thumb Tendon
-  zero_with_current(3, SERVO_IDS[3],  sd[3].servo_direction, 950);   // Index
-  zero_with_current(4, SERVO_IDS[4],  sd[4].servo_direction, 950);   // Middle
-  zero_with_current(5, SERVO_IDS[5],  sd[5].servo_direction, 950);  // Ring
-  zero_with_current(6, SERVO_IDS[6],  sd[6].servo_direction, 950);  // Pinky
+  zero_with_current(SERVO_IDS[0],  sd[0].servo_direction, 750);   // Thumb Abduction
+  zero_with_current(SERVO_IDS[1],  sd[1].servo_direction, 950);   // Thumb Flex
+  zero_with_current(SERVO_IDS[2],  sd[2].servo_direction, 950);   // Thumb Tendon
+  zero_with_current(SERVO_IDS[3],  sd[3].servo_direction, 950);   // Index
+  zero_with_current(SERVO_IDS[4],  sd[4].servo_direction, 950);   // Middle
+  zero_with_current(SERVO_IDS[5],  sd[5].servo_direction, 950);  // Ring
+  zero_with_current(SERVO_IDS[6],  sd[6].servo_direction, 950);  // Pinky
   // Post-homing settling moves
-  hlscl.WritePosEx(SERVO_IDS[0], sd[0].extend_count, 60, 50, 500);   // Thumb Abduction to extend
-  hlscl.WritePosEx(SERVO_IDS[2], sd[2].extend_count, 60, 50, 500);   // Thumb Tendon to extend
+  hlscl.WritePosEx(SERVO_IDS[0], sd[0].extend_count, 2400, 0, 1023);   // Thumb Abduction to extend
+  hlscl.WritePosEx(SERVO_IDS[1], sd[1].extend_count, 2400, 0, 1023);   // Thumb Flexion to extend
+  hlscl.WritePosEx(SERVO_IDS[2], sd[2].extend_count, 2400, 0, 1023);   // Thumb Tendon to extend
+  hlscl.WritePosEx(SERVO_IDS[3], sd[3].extend_count, 2400, 0, 1023);   // Index to extend
+  hlscl.WritePosEx(SERVO_IDS[4], sd[4].extend_count, 2400, 0, 1023);   // Middle to extend
+  hlscl.WritePosEx(SERVO_IDS[5], sd[5].extend_count, 2400, 0, 1023);   // Ring to extend
+  hlscl.WritePosEx(SERVO_IDS[6], sd[6].extend_count, 2400, 0, 1023);   // Pinky to extend
   if (gBusMux) xSemaphoreGive(gBusMux);
 }
 
